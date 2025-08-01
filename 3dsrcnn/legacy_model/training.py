@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from srcnn import srcnn_3D_333  # Adjust import based on your chosen model
 
 # Load the dataset
-data = scipy.io.loadmat("Indian_pines.mat")
+data = scipy.io.loadmat("indian_pines.mat")
 # Inspect the keys to find the hyperspectral data variable (e.g., 'indian_pines')
 hs_data = data["indian_pines"]  # Adjust the key as needed
 

@@ -12,11 +12,11 @@ from tensorflow.keras.models import load_model
 
 # 1. Load the Trained Model
 model = load_model(
-    "srcnn_model.h5", custom_objects={"mse": tf.keras.losses.MeanSquaredError()}
+    "./3dsrcnn/srcnn_model.h5", custom_objects={"mse": tf.keras.losses.MeanSquaredError()}
 )
 
 # 2. Load and Preprocess the Hyperspectral Dataset
-data = scipy.io.loadmat("Indian_pines.mat")
+data = scipy.io.loadmat("indian_pines.mat")
 hs_data = data["indian_pines"]
 
 hs_data = hs_data.astype(np.float32)

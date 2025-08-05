@@ -27,5 +27,7 @@ PATCH_BANDS = 220
 PATCH_SIZE = 64
 STRIDE = 32
 
-# Image scale factor
+# Low-resolution patch parameters
 SCALE_FACTOR = 2
+BLUR_KERNEL_SIZE = 5
+BLUR_SIGMA = 1.0

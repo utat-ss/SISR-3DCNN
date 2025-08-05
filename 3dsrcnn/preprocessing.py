@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import scipy.io
 
-from config import PATCH_BANDS
+from config import PATCH_BANDS, BLUR_KERNEL_SIZE, BLUR_SIGMA
 
 def load_datacube(directory, filename, key):
     matlab_data = scipy.io.loadmat(Path(directory, filename))
@@ -37,11 +37,26 @@ def extract_patches(datacube, patch_size, stride):
 
     return np.array(patches)
 
-def generate_low_res_patch(high_res_patch, scale_factor):
+def generate_low_res_patch(high_res_patch, scale_factor, blur=True, blur_kernel_size=BLUR_KERNEL_SIZE, blur_sigma=BLUR_SIGMA):
     h, w, _ = high_res_patch.shape
     new_h, new_w = h // scale_factor, w // scale_factor
 
-    downscaled_patch = cv2.resize(high_res_patch, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+    # Apply Gaussian blur bandwise
+    blurred_patch = high_res_patch
+
+    if blur:
+        blurred_patch = np.zeros_like(high_res_patch)
+
+        for band in range(high_res_patch.shape[2]):
+            blurred_patch[:, :, band] = cv2.GaussianBlur(
+                high_res_patch[:, :, band],
+                ksize=(blur_kernel_size, blur_kernel_size),
+                sigmaX=blur_sigma,
+                borderType=cv2.BORDER_REFLECT
+            )
+
+    # Downsample (acquire low-res image) + upsample (match original dimensions)
+    downscaled_patch = cv2.resize(blurred_patch, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
     low_res_patch = cv2.resize(downscaled_patch, (w, h), interpolation=cv2.INTER_CUBIC)
 
     return low_res_patch

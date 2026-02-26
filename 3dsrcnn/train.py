@@ -53,15 +53,16 @@ patches = np.concatenate(patches, axis=0)
 # ========== Convert Each Patch into a Low-Resolution Datacube ==========
 scale_factor = config.SCALE_FACTOR
 low_res_patches = np.array([preprocessing.generate_low_res_patch(patch, scale_factor) for patch in patches])
+upsampled_patches = np.array([preprocessing.upsample_low_res_patch(patch, scale_factor) for patch in low_res_patches])
 
 # ========== Add Channel Dimension (Required for 3D Models) ==========
 # Model expects shape: (batch_size, height, width, channels, 1)
 patches = patches[..., np.newaxis]
-low_res_patches = low_res_patches[..., np.newaxis]
+upsampled_patches = upsampled_patches[..., np.newaxis]
 
 # ========== Prepare Training, Validation, and Testing Pairs ==========
 x_train, x_temp, y_train, y_temp = train_test_split(
-    low_res_patches, patches, test_size=0.3, random_state=42
+    upsampled_patches, patches, test_size=0.3, random_state=42
 )
 
 x_val, x_test, y_val, y_test = train_test_split(
@@ -76,8 +77,7 @@ if does_checkpoint_exist():
     model, initial_epoch = get_checkpoint_data()
 
 else:
-    img_height, img_width, img_channels = config.PATCH_SIZE, config.PATCH_SIZE, config.PATCH_BANDS
-
+    img_height, img_width, img_channels = None, None, None      # Set as None for dynamic shapes
     model = srcnn_3D_333(img_height, img_width, img_channels)
     model.compile(optimizer=hyperparameters['optimizer'], loss=hyperparameters['loss_function'])
 

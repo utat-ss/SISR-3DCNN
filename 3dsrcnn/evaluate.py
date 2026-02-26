@@ -9,9 +9,17 @@ import metrics
 import preprocessing
 
 def visualize_comparison(ground_truth, low_resolution, prediction, psnr_value, ssim_value):
-    datacubes = np.stack([ground_truth, low_resolution, prediction], axis=0)
-    vmin_per_band = np.min(datacubes, axis=(0, 1, 2))
-    vmax_per_band = np.max(datacubes, axis=(0, 1, 2))
+    datacubes = [ground_truth, low_resolution, prediction]
+    num_bands = ground_truth.shape[2]
+
+    vmin_per_band, vmax_per_band = [], []
+
+    for band in range(num_bands):
+        vmin_per_band.append(min(cube[:, :, band].min() for cube in datacubes))
+        vmax_per_band.append(max(cube[:, :, band].max() for cube in datacubes))
+
+    vmin_per_band = np.array(vmin_per_band)
+    vmax_per_band = np.array(vmax_per_band)
 
     displayed_band = 0
 
@@ -20,7 +28,7 @@ def visualize_comparison(ground_truth, low_resolution, prediction, psnr_value, s
     # Display low-resolution image
     low_res_slice = low_resolution[:, :, displayed_band]
     low_res_im = ax[0].imshow(low_res_slice, cmap='gray', vmin=vmin_per_band[displayed_band], vmax=vmax_per_band[displayed_band])
-    ax[0].set_title('LR Patch (Blur + Bicubic)')
+    ax[0].set_title('LR Patch (Blur)')
 
     prediction_slice = prediction[:, :, displayed_band]
     prediction_im = ax[1].imshow(prediction_slice, cmap='gray', vmin=vmin_per_band[displayed_band], vmax=vmax_per_band[displayed_band])
@@ -109,14 +117,15 @@ for x, y in patch_coordinates:
     # ========== Generate LR Version of patch ==========
     scale_factor = config.SCALE_FACTOR
     low_res_patch = preprocessing.generate_low_res_patch(high_res_patch, scale_factor)
+    upsampled_patch = preprocessing.upsample_low_res_patch(low_res_patch, scale_factor)
 
     # ========== Prepare Input for Model ==========
     # Model expects shape: (batch_size, height, width, channels, 1)
-    low_res_patch_input = np.expand_dims(low_res_patch, axis=0) # (1, 64, 64, 220)
-    low_res_patch_input = np.expand_dims(low_res_patch_input, axis=-1) # (1, 64, 64, 220, 1)
+    upsampled_patch_input = np.expand_dims(upsampled_patch, axis=0)
+    upsampled_patch_input = np.expand_dims(upsampled_patch_input, axis=-1)
 
     # ========== Enhance Patch Using Model ==========
-    enhanced_patch = model.predict(low_res_patch_input)
+    enhanced_patch = model.predict(upsampled_patch_input)
     enhanced_patch = np.squeeze(enhanced_patch)
 
     # ========== Compute Metrics ==========

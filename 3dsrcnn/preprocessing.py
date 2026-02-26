@@ -56,7 +56,14 @@ def generate_low_res_patch(high_res_patch, scale_factor, blur=True, blur_kernel_
             )
 
     # Downsample (acquire low-res image) + upsample (match original dimensions)
-    downscaled_patch = cv2.resize(blurred_patch, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
-    low_res_patch = cv2.resize(downscaled_patch, (w, h), interpolation=cv2.INTER_CUBIC)
+    low_res_patch = cv2.resize(blurred_patch, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
 
     return low_res_patch
+
+def upsample_low_res_patch(low_res_patch, scale_factor):
+    h, w, _ = low_res_patch.shape
+    new_h, new_w = h * scale_factor, w * scale_factor
+
+    upsampled_patch = cv2.resize(low_res_patch, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+
+    return upsampled_patch

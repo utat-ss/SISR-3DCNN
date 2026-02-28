@@ -8,8 +8,8 @@ import config
 import metrics
 import preprocessing
 
-def visualize_comparison(ground_truth, low_resolution, prediction, psnr_value, ssim_value):
-    datacubes = [ground_truth, low_resolution, prediction]
+def visualize_comparison(ground_truth, low_resolution, upsampled, prediction, psnr_value, ssim_value):
+    datacubes = [ground_truth, low_resolution, upsampled, prediction]
     num_bands = ground_truth.shape[2]
 
     vmin_per_band, vmax_per_band = [], []
@@ -23,20 +23,24 @@ def visualize_comparison(ground_truth, low_resolution, prediction, psnr_value, s
 
     displayed_band = 0
 
-    fig, ax = plt.subplots(ncols=3, sharex=True, sharey=True)
+    fig, ax = plt.subplots(ncols=4, sharex=True, sharey=True)
 
     # Display low-resolution image
     low_res_slice = low_resolution[:, :, displayed_band]
     low_res_im = ax[0].imshow(low_res_slice, cmap='gray', vmin=vmin_per_band[displayed_band], vmax=vmax_per_band[displayed_band])
     ax[0].set_title('LR Patch (Blur)')
 
+    upsampled_slice = upsampled[:, :, displayed_band]
+    upsampled_im = ax[1].imshow(upsampled_slice, cmap='gray', vmin=vmin_per_band[displayed_band], vmax=vmax_per_band[displayed_band])
+    ax[1].set_title('LR Patch (Bicubic Upsampling)')
+
     prediction_slice = prediction[:, :, displayed_band]
-    prediction_im = ax[1].imshow(prediction_slice, cmap='gray', vmin=vmin_per_band[displayed_band], vmax=vmax_per_band[displayed_band])
-    ax[1].set_title(f'Enhanced Patch (PSNR: {psnr_value:.2f}, Average SSIM: {ssim_value:.2f})')
+    prediction_im = ax[2].imshow(prediction_slice, cmap='gray', vmin=vmin_per_band[displayed_band], vmax=vmax_per_band[displayed_band])
+    ax[2].set_title(f'Enhanced Patch (PSNR: {psnr_value:.2f}, Average SSIM: {ssim_value:.2f})')
 
     ground_truth_slice = ground_truth[:, :, displayed_band]
-    ground_truth_im = ax[2].imshow(ground_truth_slice, cmap='gray', vmin=vmin_per_band[displayed_band], vmax=vmax_per_band[displayed_band])
-    ax[2].set_title('Ground Truth')
+    ground_truth_im = ax[3].imshow(ground_truth_slice, cmap='gray', vmin=vmin_per_band[displayed_band], vmax=vmax_per_band[displayed_band])
+    ax[3].set_title('Ground Truth')
 
     ax_band_slider = plt.axes([0.2, 0.15, 0.65, 0.03])
     band_slider = Slider(ax_band_slider, 'Band Num', 1, ground_truth.shape[2], valinit=displayed_band + 1, valstep=1)
@@ -48,6 +52,10 @@ def visualize_comparison(ground_truth, low_resolution, prediction, psnr_value, s
         new_low_res_slice = low_resolution[:, :, displayed_band]
         low_res_im.set_data(new_low_res_slice)
         low_res_im.set_clim(vmin=vmin_per_band[displayed_band], vmax=vmax_per_band[displayed_band])
+
+        new_upsampled_slice = upsampled[:, :, displayed_band]
+        upsampled_im.set_data(new_upsampled_slice)
+        upsampled_im.set_clim(vmin=vmin_per_band[displayed_band], vmax=vmax_per_band[displayed_band])
 
         prediction_slice = prediction[:, :, displayed_band]
         prediction_im.set_data(prediction_slice)
@@ -75,7 +83,7 @@ def visualize_comparison(ground_truth, low_resolution, prediction, psnr_value, s
 
 # ========== Load Trained Model ==========
 model = tf.keras.models.load_model(
-    './3dsrcnn/models/3d_srcnn_IP_C.keras', custom_objects={'mse': tf.keras.losses.MeanSquaredError()}
+    './3dsrcnn/models/3d_srcnn_2x.keras', custom_objects={'mse': tf.keras.losses.MeanSquaredError()}
 )
 
 # ========== Load Dataset ==========
@@ -139,4 +147,4 @@ for x, y in patch_coordinates:
     print(f'SSIM: {ssim_value:.5f}')
 
     # ========== Visualization ==========
-    visualize_comparison(high_res_patch, low_res_patch, enhanced_patch, psnr_value, ssim_value)
+    visualize_comparison(high_res_patch, low_res_patch, upsampled_patch, enhanced_patch, psnr_value, ssim_value)
